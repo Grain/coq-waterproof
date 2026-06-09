@@ -60,6 +60,7 @@ Definition cv_implies_cv_abs_to_l_abs := cv_cvabs.
   When using this in rewrites, $<$, $>$, etc. should bind stronger.
 *)
 
+(* The symbol below is the standard pipe, unicode codepoint: U+007C *)
 Notation "| x |" := (Rabs x) (at level 20, format "| x |") : R_scope.
 Notation "|- x |" := (| (-x) |) (at level 20, x at next level, only parsing) : R_scope.
 Notation dist_R := R_dist.
