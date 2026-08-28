@@ -101,6 +101,74 @@ Proof.
   apply Heq. all: assumption.
 Qed.
 
+Local Lemma sigma_leq_length :
+  forall (f g : nat -> R) (m k : nat),
+  (forall i : nat, (m <= i)%nat -> (i <= m+k)%nat -> f i <= g i) ->
+  sigma f m (m+k)%nat <= sigma g m (m+k)%nat.
+Proof.
+  intros f g m. induction k; intro Hleq.
+  - rewrite <- plus_n_O.
+    rewrite sigma_eq_arg. rewrite sigma_eq_arg. apply Hleq.
+    2: rewrite <- plus_n_O. all: apply Nat.le_refl.
+  - rewrite (sigma_last f). rewrite (sigma_last g).
+    rewrite <- Nat.add_succ_comm at 2 4. rewrite Nat.add_succ_l. rewrite Nat.pred_succ.
+    apply (Rle_trans _ (f (m + S k)%nat + sigma g m (m + k))). apply Rplus_le_compat_l. Show.
+    apply IHk.
+    { intros i Hbot Htop. apply Hleq. assumption.
+      rewrite <- Nat.add_succ_comm. apply (Nat.le_le_succ_r _ _ Htop). }
+    { apply Rplus_le_compat_r. apply Hleq. apply Nat.le_add_r. apply Nat.le_refl. }
+    all: apply Nat.lt_add_pos_r, Nat.lt_0_succ.
+Qed.
+
+Theorem sigma_leq :
+  forall (f g : nat -> R) (m n : nat), (m <= n)%nat ->
+  (forall i : nat, (m <= i)%nat -> (i <= n)%nat -> f i <= g i) ->
+  sigma f m n <= sigma g m n.
+Proof.
+  intros f g m n Hmn Hleq.
+  rewrite <- (Arith_base.le_plus_minus_r_stt m n).
+  apply sigma_leq_length.
+  rewrite Arith_base.le_plus_minus_r_stt.
+  intros i Hibot Hitop.
+  apply Hleq. all: assumption.
+Qed.
+
+Corollary sigma_geq :
+  forall (f g : nat -> R) (m n : nat), (m <= n)%nat ->
+  (forall i : nat, (m <= i)%nat -> (i <= n)%nat -> f i >= g i) ->
+  sigma f m n >= sigma g m n.
+Proof.
+  intros f g m n Hmn Hgeq.
+  apply Rle_ge, sigma_leq. apply Hmn.
+  intros i Hlo Hhi. apply Rge_le, (Hgeq _ Hlo Hhi).
+Qed.
+
+Lemma sigma_const_0 :
+  forall (c : R) (n : nat), sigma (fun _ => c) 0 n = INR (S n) * c.
+Proof.
+  intro c. induction n.
+  - rewrite INR_1, Rmult_1_l. apply sigma_eq_arg.
+  - rewrite sigma_last, Nat.pred_succ, IHn, (S_INR (S n)),
+    Rplus_comm, Rmult_plus_distr_r, Rmult_1_l. reflexivity.
+    apply Nat.lt_0_succ.
+Qed.
+
+Corollary sigma_const_0_plus :
+  forall (c : R) (n : nat), sigma (fun _ => c) 0 n = (INR n + 1) * c.
+Proof.
+  intros c n. rewrite <- S_INR.
+  apply sigma_const_0.
+Qed.
+
+Corollary sigma_const_1 :
+  forall (c : R) (n : nat), (1 <= n)%nat -> sigma (fun _ => c) 1 n = INR n * c.
+Proof.
+  intros c n Hn.
+  apply (Rplus_eq_reg_l c).
+  rewrite <- (sigma_first (fun _ : nat => c) (Nat.le_trans _ 1 _ (Nat.le_refl _) Hn)).
+  rewrite sigma_const_0, S_INR, Rplus_comm, Rmult_plus_distr_r, Rmult_1_l. reflexivity.
+Qed.
+
 Local Lemma sigma_distr_l_len :
   forall (f : nat -> R) (c : R) (m k : nat),
   sigma (fun i => c * f i) m (m+k) = c * (sigma f m (m+k)).
@@ -508,6 +576,11 @@ Waterproof Set Shorten Databases FiniteSums wp_finite_sums.
 #[export] Hint Resolve sigma_diff_neg : wp_finite_sums.
 #[export] Hint Resolve sigma_eq_arg : wp_finite_sums.
 #[export] Hint Resolve sigma_eq : wp_finite_sums.
+#[export] Hint Resolve sigma_leq : wp_finite_sums.
+#[export] Hint Resolve sigma_geq : wp_finite_sums.
+#[export] Hint Resolve sigma_const_0 : wp_finite_sums.
+#[export] Hint Resolve sigma_const_0_plus : wp_finite_sums.
+#[export] Hint Resolve sigma_const_1 : wp_finite_sums.
 #[export] Hint Resolve sigma_distr_l : wp_finite_sums.
 #[export] Hint Resolve sigma_distr_r : wp_finite_sums.
 #[export] Hint Resolve sigma_comm : wp_finite_sums.
